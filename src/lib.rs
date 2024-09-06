@@ -21,7 +21,7 @@
 
 #![forbid(unsafe_code)]
 #![crate_type = "lib"]
-#![crate_name = "little_exif"]
+#![crate_name = "revolt_little_exif"]
 
 mod general_file_io;
 mod png;
