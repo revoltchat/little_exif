@@ -1,10 +1,12 @@
 [package]
-name = "little_exif"
+name = "revolt_little_exif"
 
 version = "0.4.0"
 edition = "2021"
 
 description = """
+(fork which includes support for passing filetype directly)
+
 This little library implements simple functionality for basic reading and 
 writing of EXIF (related) metadata for PNG and JP(E)G image files (other file 
 types - e.g. TIFF or HEIC - are planned for the future), with the advantage of 
@@ -15,7 +17,7 @@ accessing the data (there are dependencies e.g. for calculating checksums or
 
 authors = ["Tobias Prisching"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/TechnikTobi/little_exif"
+repository = "https://github.com/revoltchat/little_exif"
 readme = "README.md"
 keywords = ["metadata", "exif", "photo", "image"]
 categories = ["multimedia::images"]

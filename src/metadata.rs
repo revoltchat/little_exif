@@ -120,6 +120,50 @@ Metadata
 		eprintln!("WARNING: Can't read metadata from file - Create new & empty struct");
 		return Ok(Metadata::new());
 	}
+
+	/// Constructs a new `Metadata` object with the metadata from the image at the specified path with the given filetype.
+	/// - If unable to read the file (e.g. does not exist, unsupported file type, etc.), this (currently) panics.
+	/// - If unable to decode the metadata, a new, empty object gets created and returned.
+	pub fn
+	new_from_path_with_filetype
+	(
+		path: &Path,
+		raw_file_type: FileExtension
+	)
+	-> Result<Metadata, std::io::Error>
+	{
+		// Call the file specific decoders as a starting point for obtaining
+		// the raw EXIF data that gets further processed
+		let raw_pre_decode_general = match raw_file_type
+		{
+			FileExtension::JPEG 
+				=>  jpg::read_metadata(&path),
+			FileExtension::PNG {as_zTXt_chunk: _} 
+				=>  png::read_metadata(&path),
+			FileExtension::WEBP 
+				=> webp::read_metadata(&path),
+		};
+
+		if let Ok(pre_decode_general) = raw_pre_decode_general
+		{
+			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
+			if let Ok((endian, data)) = decoding_result
+			{
+				return Ok(Metadata { endian, data });
+			}
+			else
+			{
+				eprintln!("{}", decoding_result.err().unwrap());
+			}
+		}
+		else
+		{
+			eprintln!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
+		}
+
+		eprintln!("WARNING: Can't read metadata from file - Create new & empty struct");
+		return Ok(Metadata::new());
+	}
 	
 	/// Gets a shared reference to the list of all tags currently stored in the object.
 	///
