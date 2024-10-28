@@ -37,8 +37,8 @@ macro_rules! build_tag_enum {
 		/// These are the currently supported tags by little_exif. 
 		/// Note that for tags that are unknown at the moment a fallback
 		/// solution is provided using the `Unknown...` variants. 
-		#[derive(PartialEq, Debug)]
-		pub enum 
+		#[derive(PartialEq, Debug, Clone)]
+		pub enum
 		ExifTag
 		{
 			$(
@@ -116,10 +116,10 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Gets the tag for a given hex value. 
-			/// The tag is initalized using the given raw data by converting it
+			/// The tag is initialized using the given raw data by converting it
 			/// to the appropriate format.
 			/// If the hex value is unknown, the other parameters are used to
-			/// generate an appropriate unkown tag for the specified format.
+			/// generate an appropriate unknown tag for the specified format.
 			/// 
 			/// # Examples
 			/// ```no_run
@@ -158,18 +158,18 @@ macro_rules! build_tag_enum {
 						// In this case, the given hex_value represents a tag that is unknown
 						match *format
 						{
-							ExifTagFormat::INT8U        => Ok(ExifTag::UnknownINT8U(        <INT8U          as U8conversion<INT8U>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::STRING       => Ok(ExifTag::UnknownSTRING(       <STRING         as U8conversion<STRING>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::INT16U       => Ok(ExifTag::UnknownINT16U(       <INT16U         as U8conversion<INT16U>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::INT32U       => Ok(ExifTag::UnknownINT32U(       <INT32U         as U8conversion<INT32U>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::RATIONAL64U  => Ok(ExifTag::UnknownRATIONAL64U(  <RATIONAL64U    as U8conversion<RATIONAL64U>>::from_u8_vec(raw_data, endian),   hex_value, *group)),
-							ExifTagFormat::INT8S        => Ok(ExifTag::UnknownINT8S(        <INT8S          as U8conversion<INT8S>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::UNDEF        => Ok(ExifTag::UnknownUNDEF(        <UNDEF          as U8conversion<UNDEF>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::INT16S       => Ok(ExifTag::UnknownINT16S(       <INT16S         as U8conversion<INT16S>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::INT32S       => Ok(ExifTag::UnknownINT32S(       <INT32S         as U8conversion<INT32S>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::RATIONAL64S	=> Ok(ExifTag::UnknownRATIONAL64S(	<RATIONAL64S    as U8conversion<RATIONAL64S>>::from_u8_vec(raw_data, endian),   hex_value, *group)),
-							ExifTagFormat::FLOAT        => Ok(ExifTag::UnknownFLOAT(        <FLOAT          as U8conversion<FLOAT>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::DOUBLE       => Ok(ExifTag::UnknownDOUBLE(       <DOUBLE         as U8conversion<DOUBLE>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
+							ExifTagFormat::INT8U       => Ok(ExifTag::UnknownINT8U(      <INT8U       as U8conversion<INT8U      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::STRING      => Ok(ExifTag::UnknownSTRING(     <STRING      as U8conversion<STRING     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT16U      => Ok(ExifTag::UnknownINT16U(     <INT16U      as U8conversion<INT16U     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT32U      => Ok(ExifTag::UnknownINT32U(     <INT32U      as U8conversion<INT32U     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::RATIONAL64U => Ok(ExifTag::UnknownRATIONAL64U(<RATIONAL64U as U8conversion<RATIONAL64U>>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT8S       => Ok(ExifTag::UnknownINT8S(      <INT8S       as U8conversion<INT8S      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::UNDEF       => Ok(ExifTag::UnknownUNDEF(      <UNDEF       as U8conversion<UNDEF      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT16S      => Ok(ExifTag::UnknownINT16S(     <INT16S      as U8conversion<INT16S     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT32S      => Ok(ExifTag::UnknownINT32S(     <INT32S      as U8conversion<INT32S     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::RATIONAL64S => Ok(ExifTag::UnknownRATIONAL64S(<RATIONAL64S as U8conversion<RATIONAL64S>>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::FLOAT       => Ok(ExifTag::UnknownFLOAT(      <FLOAT       as U8conversion<FLOAT      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::DOUBLE      => Ok(ExifTag::UnknownDOUBLE(     <DOUBLE      as U8conversion<DOUBLE     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
 							
 						}
 					},
@@ -360,7 +360,7 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Checks if the format type of the tag is `STRING`.
-			/// Needed for generating the EXIF data to know wheter to add a 
+			/// Needed for generating the EXIF data to know whether to add a 
 			/// NUL terminator at the end
 			pub fn
 			is_string
@@ -376,6 +376,31 @@ macro_rules! build_tag_enum {
 					)*
 					ExifTag::UnknownSTRING(_, _, _) => true,
 					_ => false,
+				}
+			}
+
+			/// For handling special case tags that need to be able to accept
+			/// both INT16U and INT32U
+			/// See subsections 4.6.5 and 4.6.6 of CIPA DC-008-2023, which is
+			/// the EXIF specification in Version 3.0
+			pub fn
+			set_value_to_int32u_vec
+			(
+				&self,
+				data: Vec<u32>
+			)
+			-> Result<ExifTag, String>
+			{
+				match self
+				{
+					ExifTag::ImageWidth(_)      => Ok(ExifTag::ImageWidth(     data)),
+					ExifTag::ImageHeight(_)     => Ok(ExifTag::ImageHeight(    data)),
+					ExifTag::StripOffsets(_)    => Ok(ExifTag::StripOffsets(   data)),
+					ExifTag::RowsPerStrip(_)    => Ok(ExifTag::RowsPerStrip(   data)),
+					ExifTag::StripByteCounts(_) => Ok(ExifTag::StripByteCounts(data)),
+					ExifTag::ExifImageWidth(_)  => Ok(ExifTag::ExifImageWidth( data)),
+					ExifTag::ExifImageHeight(_) => Ok(ExifTag::ExifImageHeight(data)),
+					_ => Err(String::from("Not a INT32U compatible tag!"))
 				}
 			}
 
@@ -502,7 +527,7 @@ build_tag_enum![
 	(BrightnessValue,             0x9203, RATIONAL64S,   Some::<u32>(1),    true,      ExifIFD),
 	(ExposureCompensation,        0x9204, RATIONAL64S,   Some::<u32>(1),    true,      ExifIFD),
 	(MaxApertureValue,            0x9205, RATIONAL64U,   Some::<u32>(1),    true,      ExifIFD),
-	(SubjectDistance,             0x9206, RATIONAL64S,   Some::<u32>(1),    true,      ExifIFD),
+	(SubjectDistance,             0x9206, RATIONAL64U,   Some::<u32>(1),    true,      ExifIFD),
 	(MeteringMode,                0x9207, INT16U,        Some::<u32>(1),    true,      ExifIFD),
 	(LightSource,                 0x9208, INT16U,        Some::<u32>(1),    true,      ExifIFD),    // -> EXIF LightSource Values: https://exiftool.org/TagNames/EXIF.html#LightSource
 	(Flash,                       0x9209, INT16U,        Some::<u32>(1),    true,      ExifIFD),    // -> EXIF Flash Values: https://exiftool.org/TagNames/EXIF.html#Flash
@@ -591,7 +616,7 @@ impl ExifTag
 		{
 			ExifTag::ExifOffset(_)		=> Some(ExifTagGroup::ExifIFD),
 			ExifTag::GPSInfo(_)			=> Some(ExifTagGroup::GPSIFD),
-			ExifTag::MakerNote(_)		=> Some(ExifTagGroup::MakerNotesIFD),
+			// ExifTag::MakerNote(_)		=> Some(ExifTagGroup::MakerNotesIFD),
 			ExifTag::InteropOffset(_)	=> Some(ExifTagGroup::InteropIFD),
 			_ => None
 		}

@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::copy;
+use std::fs::read;
 use std::fs::remove_file;
 use std::path::Path;
 
@@ -24,9 +25,25 @@ new_from_path()
 }
 
 #[test]
-#[should_panic(expected = "Can't read Metadata - File does not exist!")]
 fn
-new_from_path_panic_not_existant()
+new_from_path_no_data_jxl()
+{
+	let data = Metadata::new_from_path(Path::new("tests/no_exif.jxl")).unwrap();
+	assert_eq!(data.data().len(), 0);
+}
+
+#[test]
+fn
+new_from_path_no_data_jpg()
+{
+	let data = Metadata::new_from_path(Path::new("tests/no_exif.jpeg")).unwrap();
+	assert_eq!(data.data().len(), 0);
+}
+
+#[test]
+#[should_panic(expected = "File does not exist!")]
+fn
+new_from_path_panic_not_existent()
 {
 	let _ = Metadata::new_from_path(Path::new("sample2.png")).unwrap();
 }
@@ -40,11 +57,20 @@ new_from_path_panic_no_extension()
 }
 
 #[test]
-#[should_panic(expected = "Can't read Metadata - Unsupported file type!")]
+#[should_panic(expected = "Unsupported file type!")]
 fn
 new_from_path_panic_not_supported()
 {
 	let _ = Metadata::new_from_path(Path::new("tests/sample1.txt")).unwrap();
+}
+
+#[test]
+fn
+new_from_vec()
+{
+	let image_data = read("tests/read_sample.jpg").unwrap();
+
+	let _ = Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG).unwrap();
 }
 
 
@@ -86,8 +112,97 @@ read_from_file_webp()
 		panic!("Could not read ISO tag!")
 	}
 
+	if let Some(image_description_tag) = metadata.get_tag(&ExifTag::ImageDescription(String::new()))
+	{
+		assert_eq!(String::from_utf8(image_description_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)).unwrap(), "Hello World!\0".to_string());
+	}
+	else
+	{
+		panic!("Could not read ImageDescription tag!")
+	}
+
 	Ok(())
 }
+
+#[test]
+fn
+read_from_file_jxl()
+-> Result<(), std::io::Error>
+{
+	let raw_metadata = Metadata::new_from_path(Path::new("tests/with_exif.jxl"));
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	{
+		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	}
+	else
+	{
+		panic!("Could not read ISO tag!")
+	}
+
+	Ok(())
+}
+
+
+fn
+read_from_vec_generic
+(
+	image_data: &Vec<u8>,
+	filetype: little_exif::filetype::FileExtension
+)
+-> Result<(), std::io::Error>
+{
+	let raw_metadata = Metadata::new_from_vec(&image_data, filetype);
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	{
+		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	}
+	else
+	{
+		panic!("Could not read ISO tag!")
+	}
+
+	Ok(())
+}
+
+#[test]
+fn
+read_from_vec_webp()
+-> Result<(), std::io::Error>
+{
+	return read_from_vec_generic(&read("tests/read_sample.webp").unwrap(), little_exif::filetype::FileExtension::WEBP);
+}
+
+#[test]
+fn
+read_from_vec_jpg()
+-> Result<(), std::io::Error>
+{
+	return read_from_vec_generic(&read("tests/read_sample.jpg").unwrap(), little_exif::filetype::FileExtension::JPEG);
+}
+
+#[test]
+fn
+read_from_vec_jxl()
+-> Result<(), std::io::Error>
+{
+	return read_from_vec_generic(&read("tests/with_exif.jxl").unwrap(), little_exif::filetype::FileExtension::JXL);
+}
+
+
 
 
 fn
@@ -150,7 +265,47 @@ as_u8_vec_png_zTXt()
 
 #[test]
 fn
-clear_metadata_jpg()
+clear_metadata_jxl()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample_copy_no_metadata.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/with_exif.jxl", "tests/sample_copy_no_metadata.jxl")?;
+
+	let mut image_data = read("tests/sample_copy_no_metadata.jxl").unwrap();
+
+	// Clear metadata
+	Metadata::clear_metadata(&mut image_data, little_exif::filetype::FileExtension::JXL)?;
+
+	std::fs::write("tests/sample_copy_no_metadata.jxl", image_data)?;
+
+	Ok(())
+}
+
+#[test]
+fn
+file_clear_metadata_jxl()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample_copy_no_metadata2.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/with_exif.jxl", "tests/sample_copy_no_metadata2.jxl")?;
+
+	// Clear metadata
+	Metadata::file_clear_metadata(Path::new("tests/sample_copy_no_metadata2.jxl"))?;
+
+	Ok(())
+}
+
+#[test]
+fn
+file_clear_metadata_jpg()
 -> Result<(), std::io::Error>
 {
 	// Remove file from previous run and replace it with fresh copy
@@ -167,7 +322,7 @@ clear_metadata_jpg()
 	metadata.write_to_file(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
 
 	// Clear metadata
-	Metadata::clear_metadata(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
+	Metadata::file_clear_metadata(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
 
 	Ok(())
 }
@@ -190,6 +345,48 @@ write_to_file_jpg()
 	
 	// Write metadata to file
 	metadata.write_to_file(Path::new("tests/sample2_copy.jpg"))?;
+
+	Ok(())
+}
+
+#[test]
+fn 
+write_to_file_jxl_no_conversion() 
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/iso_no_exif_copy.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/iso_no_exif.jxl", "tests/iso_no_exif_copy.jxl")?;
+
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/iso_no_exif_copy.jxl"))?;
+
+	Ok(())
+}
+
+#[test]
+fn 
+write_to_file_jxl_with_conversion() 
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/no_exif_copy.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/no_exif.jxl", "tests/no_exif_copy.jxl")?;
+
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/no_exif_copy.jxl"))?;
 
 	Ok(())
 }
@@ -246,17 +443,17 @@ write_to_file_webp_simple_lossless()
 -> Result<(), std::io::Error>
 {
 	// Remove file from previous run and replace it with fresh copy
-	if let Err(error) = remove_file("tests/sample2_simple_loseless_copy.webp")
+	if let Err(error) = remove_file("tests/sample2_simple_lossless_copy.webp")
 	{
 		println!("{}", error);
 	}
-	copy("tests/sample2_simple_loseless.webp", "tests/sample2_simple_loseless_copy.webp")?;
+	copy("tests/sample2_simple_lossless.webp", "tests/sample2_simple_lossless_copy.webp")?;
 
 	// Create newly created & filled metadata struct
 	let metadata = get_test_metadata()?;
 		
 	// Write metadata to file
-	metadata.write_to_file(Path::new("tests/sample2_simple_loseless_copy.webp"))?;
+	metadata.write_to_file(Path::new("tests/sample2_simple_lossless_copy.webp"))?;
 
 	Ok(())
 }
@@ -281,4 +478,120 @@ write_to_file_webp_extended()
 	metadata.write_to_file(Path::new("tests/sample2_extended_copy.webp"))?;
 
 	Ok(())
+}
+
+fn 
+compare_write_to_generic
+(
+	original_file:  &str,
+	copy1_file:     &str,
+	copy2_file:     &str,
+	file_extension: little_exif::filetype::FileExtension
+)
+-> Result<(), std::io::Error>
+{
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+	
+	if let Err(error) = remove_file(copy1_file)
+	{
+		println!("{}", error);
+	}
+	copy(original_file, copy1_file)?;
+	metadata.write_to_file(Path::new(copy1_file))?;
+
+	// Now do the same but via the vec-based function
+	if let Err(error) = remove_file(copy2_file)
+	{
+		println!("{}", error);
+	}
+	copy(original_file, copy2_file)?;
+	let mut image_data = read(copy2_file).unwrap();
+	metadata.write_to_vec(&mut image_data, file_extension)?;
+	std::fs::write(copy2_file, image_data.clone())?;
+
+	// Read first write version back in
+	let compare_me = read(copy1_file).unwrap();
+
+	// Compare their lengths
+	if compare_me.len() != image_data.len()
+	{
+		panic!("Lengths differ! file: {} vs vec: {}", compare_me.len(), image_data.len());
+	}
+
+	// Compare their contents
+	for i in 0..compare_me.len()
+	{
+		if compare_me[i] != image_data[i]
+		{
+			panic!("Data differs! file: {} vs vec: {}", compare_me[i], image_data[i]);
+		}
+	}
+
+	Ok(())
+}
+
+#[test]
+fn 
+compare_write_to_jpg()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2.jpg",
+		"tests/sample2_copy1.jpg",
+		"tests/sample2_copy2.jpg",
+		little_exif::filetype::FileExtension::JPEG
+	);
+}
+
+#[test]
+fn 
+compare_write_to_jxl()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/no_exif.jxl",
+		"tests/no_exif_copy1.jxl",
+		"tests/no_exif_copy2.jxl",
+		little_exif::filetype::FileExtension::JXL
+	);
+}
+
+#[test]
+fn 
+compare_write_to_png()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2.png",
+		"tests/sample2_copy1.png",
+		"tests/sample2_copy2.png",
+		little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false }
+	);
+}
+
+#[test]
+fn 
+compare_write_to_webp_lossless()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2_simple_lossless.webp",
+		"tests/sample2_simple_lossless_copy1.webp",
+		"tests/sample2_simple_lossless_copy2.webp",
+		little_exif::filetype::FileExtension::WEBP
+	);
+}
+
+#[test]
+fn 
+compare_write_to_webp_extended()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2_extended.webp",
+		"tests/sample2_extended_copy1.webp",
+		"tests/sample2_extended_copy2.webp",
+		little_exif::filetype::FileExtension::WEBP
+	);
 }

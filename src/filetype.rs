@@ -2,14 +2,18 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::str::FromStr;
+use std::path::Path;
 
-#[derive(Debug, PartialEq)]
+use crate::general_file_io::*;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_snake_case)]
 pub enum
 FileExtension
 {
 	PNG  {as_zTXt_chunk: bool},
 	JPEG,
+	JXL,
 	WEBP
 }
 
@@ -18,7 +22,7 @@ FromStr
 for 
 FileExtension 
 {
-	type Err = ();
+	type Err = std::io::Error;
 
 	fn 
 	from_str
@@ -31,9 +35,47 @@ FileExtension
 		{
 			"jpg"   => Ok(FileExtension::JPEG),
 			"jpeg"  => Ok(FileExtension::JPEG),
+			"jxl"   => Ok(FileExtension::JXL),
 			"png"   => Ok(FileExtension::PNG{ as_zTXt_chunk: true}),
 			"webp"  => Ok(FileExtension::WEBP),
-			_       => Err(()),
+			_       => io_error!(Unsupported, "Unknown file type!")
 		}
+	}
+}
+
+
+
+pub(crate) fn
+get_file_type
+(
+	path: &Path
+)
+-> Result<FileExtension, std::io::Error>
+{
+	if !path.exists()
+	{
+		return io_error!(Other, "File does not exist!");
+	}
+
+	let raw_file_type_str = path.extension();
+	if raw_file_type_str.is_none()
+	{
+		return io_error!(Other, "Can't get extension from given path!");
+	}
+
+	let file_type_str = raw_file_type_str.unwrap().to_str();
+	if file_type_str.is_none()
+	{
+		return io_error!(Other, "Can't convert file type to string!");
+	}
+
+	let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
+	if raw_file_type.is_err()
+	{
+		return io_error!(Unsupported, "Unsupported file type!");
+	}
+	else
+	{
+		return Ok(raw_file_type.unwrap());
 	}
 }

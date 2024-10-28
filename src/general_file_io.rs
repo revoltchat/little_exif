@@ -3,6 +3,7 @@
 
 pub(crate) const NEWLINE:                u8      = 0x0a;
 pub(crate) const SPACE:                  u8      = 0x20;
+pub(crate) const EXIF:                   [u8; 4] = [0x45, 0x78, 0x69, 0x66];
 pub(crate) const EXIF_HEADER:            [u8; 6] = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
 
 macro_rules! perform_file_action {
@@ -28,6 +29,46 @@ macro_rules! io_error {
 			$message
 		))
 	};
+}
+
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::path::Path;
+
+pub(crate) fn
+open_read_file
+(
+	path: &Path
+)
+-> Result<File, std::io::Error>
+{
+	if !path.exists()
+	{
+		return io_error!(NotFound, "Can't open file - File does not exist!");
+	}
+
+	OpenOptions::new()
+		.read(true)
+		.write(false)
+		.open(path)
+}
+
+pub(crate) fn
+open_write_file
+(
+	path: &Path
+)
+-> Result<File, std::io::Error>
+{
+	if !path.exists()
+	{
+		return io_error!(NotFound, "Can't open file - File does not exist!");
+	}
+	
+	OpenOptions::new()
+		.read(true)
+		.write(true)
+		.open(path)
 }
 
 pub(crate) use perform_file_action;
